@@ -10,7 +10,7 @@
     <link href="css/bootstrap-datetimepicker.min.css" rel="stylesheet" />
     <script src="js/bootstrap-datetimepicker.min.js"></script>
     <script src="js/bootstrap-datetimepicker.zh-CN.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         .navbar {
             border-radius: 0px;
@@ -20,7 +20,7 @@
         var app = angular.module('myApp', []);
         app.controller('mainController', function ($scope, $http) {
             $scope.date = $("#time").val();
-            $scope.getAllWindow = function(date) {
+            $scope.getAllWindow = function (date) {
                 $http({
                     method: 'get',
                     url: '/home/GetAllWindow?date=' + date,
@@ -37,7 +37,7 @@
             };
             $scope.getAllWindow('');//初始化
             var now = new Date();
-            var time = now.getFullYear() + "-" +((now.getMonth()+1)<10?"0":"")+(now.getMonth()+1)+"-"+(now.getDate()<10?"0":"")+now.getDate();
+            var time = now.getFullYear() + "-" + ((now.getMonth() + 1) < 10 ? "0" : "") + (now.getMonth() + 1) + "-" + (now.getDate() < 10 ? "0" : "") + now.getDate();
             $("#time").datetimepicker({
                 format: 'yyyy-mm-dd',
                 language: 'zh-CN',
@@ -45,7 +45,7 @@
                 minView: 'month',
                 endDate: time,
                 todayBtn: true,
-                initialDate:time
+                initialDate: time
             }).on('changeDate', function () {
                 $scope.date = $("#time").val();
                 $scope.getAllWindow($scope.date);
@@ -72,7 +72,7 @@
                     }
                 });
             }
-      
+
             $scope.submitAreaForm = function () {
                 $http({
                     method: 'post',
