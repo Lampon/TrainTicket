@@ -40,6 +40,11 @@ namespace TrainTicket.Models
         [SugarColumn(IsNullable = false)]
         public int Output { get; set; }
         /// <summary>
+        /// 结存
+        /// </summary>
+        [SugarColumn(IsNullable = false)]
+        public int Remain { get; set; }
+        /// <summary>
         /// 添加时间
         /// </summary>
         [SugarColumn(IsNullable = false)]

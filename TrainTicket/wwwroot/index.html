@@ -19,16 +19,106 @@
     <script>
         var app = angular.module('myApp', []);
         app.controller('mainController', function ($scope, $http) {
+            $scope.date = $("#time").val();
+            $scope.getAllWindow = function(date) {
+                $http({
+                    method: 'get',
+                    url: '/home/GetAllWindow?date=' + date,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function (resp) {
+                    if (resp.data.Code == 1000) {
+                        $scope.allWindows = resp.data.Data;
+                    } else {
+                        alert(resp.data.Msg);
+                    }
+                });
+            };
+            $scope.getAllWindow('');//初始化
+            var now = new Date();
+            var time = now.getFullYear() + "-" +((now.getMonth()+1)<10?"0":"")+(now.getMonth()+1)+"-"+(now.getDate()<10?"0":"")+now.getDate();
             $("#time").datetimepicker({
                 format: 'yyyy-mm-dd',
                 language: 'zh-CN',
                 autoclose: true,
                 minView: 'month',
-                todayBtn: true
+                endDate: time,
+                todayBtn: true,
+                initialDate:time
             }).on('changeDate', function () {
-
+                $scope.date = $("#time").val();
+                $scope.getAllWindow($scope.date);
             });;
-
+            $scope.addArea = function () {
+                $('#addArea').modal('show');
+            }
+            $scope.areaList = [];
+            $scope.initAreaId = 0;
+            $scope.allWindows = [];
+            $scope.addWindow = function () {
+                $('#addWindow').modal('show');
+                $http({
+                    method: 'get',
+                    url: '/home/getArea',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function (resp) {
+                    if (resp.data.Code == 1000) {
+                        $scope.areaList = resp.data.Data;
+                    } else {
+                        alert(resp.data.Msg);
+                    }
+                });
+            }
+      
+            $scope.submitAreaForm = function () {
+                $http({
+                    method: 'post',
+                    url: '/home/AddArea',
+                    data: $.param($scope.area),
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function (resp) {
+                    if (resp.data.Code == 1000) {
+                        $('#addArea').modal('hide');
+                    } else {
+                        alert(resp.data.Msg);
+                    }
+                });
+            }
+            $scope.submitWindowForm = function () {
+                $http({
+                    method: 'post',
+                    url: '/home/addWindow',
+                    data: $.param($scope.window),
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function (resp) {
+                    if (resp.data.Code == 1000) {
+                        $('#addWindow').modal('hide');
+                    } else {
+                        alert(resp.data.Msg);
+                    }
+                });
+            }
+            $scope.addDailyTicketRecord = function () {
+                var date =
+                    $http({
+                        method: 'post',
+                        url: '/home/AddDailyTicketRecord?date=' + $scope.date,
+                        data: $scope.allWindows
+                    }).then(function (resp) {
+                        if (resp.data.Code == 1000) {
+                            $('#addWindow').modal('hide');
+                        } else {
+                            alert(resp.data.Msg);
+                        }
+                    });
+            }
         });
     </script>
     <style>
@@ -51,20 +141,20 @@
             </div>
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
-                    <li class="active"><a href="#">任务列表<span class="sr-only">(current)</span></a></li>
+                    <li class="active"><a href="#">每日票务列表<span class="sr-only">(current)</span></a></li>
                 </ul>
                 <ul>
-                    <li class="navbar-nav navbar-right">
+                    <!--<li class="navbar-nav navbar-right">
                         <button type="button" class="btn btn-primary navbar-btn" ng-click="addJob()">新增任务</button>
-                    </li>
+                    </li>-->
                     <li class="navbar-nav navbar-right">
                         <div class="btn-group">
                             <button type="button" class="btn btn-primary dropdown-toggle navbar-btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 管理 <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a href="#">添加区域</a></li>
-                                <li><a href="#">添加窗口</a></li>
+                                <li><a href="#" ng-click="addArea()">添加区域</a></li>
+                                <li><a href="#" ng-click="addWindow()">添加窗口</a></li>
                                 <!--<li><a href="#">Something else here</a></li>
                                 <li role="separator" class="divider"></li>
                                 <li><a href="#">Separated link</a></li>-->
@@ -93,64 +183,98 @@
                             <th>窗口</th>
                             <th>领发数量</th>
                             <th>请领数量</th>
+                            <th>结存数量</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td rowspan="2">杭州东站</td>
-                            <td>1号窗口</td>
+                    <tbody ng-repeat="model in allWindows">
+                        <tr ng-repeat="item in model.Windows">
+                            <td ng-if="$index ==0" rowspan="{{model.Windows.length}}">
+                                {{model.Name}}（{{model.AreaRemain}}）
+                            </td>
+                            <td>{{item.Name}}</td>
                             <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
+                                <input type="hidden" class="form-control" ng-model="model.ID" placeholder="区域ID">
+                                <input type="hidden" class="form-control" ng-model="item.ID" placeholder="窗口ID">
+                                <input type="text" class="form-control" ng-model="item.Output" placeholder="请输入数量">
                             </td>
                             <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
-                            </td>
-                        </tr>
-                        <tr>
-
-                            <td>2号窗口</td>
-                            <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
+                                <input type="text" class="form-control" ng-model="item.Input" placeholder="请输入数量">
                             </td>
                             <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td rowspan="3">城站</td>
-                            <td>3号窗口</td>
-                            <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
-                            </td>
-                            <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
-                            </td>
-                        </tr>
-                        <tr>
-
-                            <td>4号窗口</td>
-                            <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
-                            </td>
-                            <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
-                            </td>
-                        </tr>
-                        <tr>
-
-                            <td>5号窗口</td>
-                            <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
-                            </td>
-                            <td>
-                                <input type="text" class="form-control" id="exampleInputEmail1" placeholder="Email">
+                                <input type="text" class="form-control" ng-model="item.Remain" readonly="readonly">
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+        <div class="row">
+            <div class="col-md-4"></div>
+            <div class="col-md-4">
+                <button type="button" ng-click="addDailyTicketRecord()" class="btn btn-primary">保存</button>
+            </div>
+            <div class="col-md-4"></div>
+        </div>
     </div>
-
+    <div class="modal fade " id="addWindow" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">添加窗口</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">区域</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" ng-model="window.AreaId" ng-options='x.Id as x.Name for x  in areaList'></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">窗口名称</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" ng-model="window.Name" placeholder="请输入窗口名称">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">初始库存</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" ng-model="window.Stock" placeholder="请输入初始库存">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" ng-click="submitWindowForm()" class="btn btn-primary">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade " id="addArea" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">添加区域</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">区域名称</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" ng-model="area.Name" placeholder="请输入区域名称">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" ng-click="submitAreaForm()" class="btn btn-primary">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

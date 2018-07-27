@@ -6,7 +6,7 @@ using SqlSugar;
 
 namespace TrainTicket.Models
 {
-    public class Area
+    public class Area 
     {
         public Area()
         {
