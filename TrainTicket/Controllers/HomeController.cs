@@ -60,33 +60,57 @@ namespace TrainTicket.Controllers
             List<AreaBody> list = new List<AreaBody>();
             foreach (var item in Arealist)
             {
-                var windowBody = db.SugarDatabase.Queryable<Window, DailyTicketRecord>((wd, dtr) => new object[]
+                //var windowBody = db.SugarDatabase.Queryable<Window, DailyTicketRecord>((wd, dtr) => new object[]
+                //{
+                //    JoinType.Left, wd.Id == dtr.WindowId
+                //}).Where((wd, dtr) => wd.AreaId == item.Id && dtr.Date == date).Select((wd, dtr) => new WindowBody
+                //{
+                //    Id = wd.Id,
+                //    Name = wd.Name,
+                //    AreaId = wd.AreaId,
+                //    Input = dtr.Input,
+                //    Output = dtr.Output,
+                //    Remain = dtr.Remain
+                //}).ToList();
+                List<WindowBody> listModel = new List<WindowBody>();
+                var listWindowBody = db.SugarDatabase.Queryable<Window>().Where(a => a.AreaId == item.Id).ToList();
+                foreach (var window in listWindowBody)
                 {
-                    JoinType.Left, wd.Id == dtr.WindowId
-                }).Where((wd, dtr) => wd.AreaId == item.Id && dtr.Date == date).Select((wd, dtr) => new WindowBody
-                {
-                    Id = wd.Id,
-                    Name = wd.Name,
-                    AreaId = wd.AreaId,
-                    Input = dtr.Input,
-                    Output = dtr.Output,
-                    Remain = dtr.Remain
-                }).ToList();
-                if (windowBody.Count == 0)//不存在记录
-                {
-                    windowBody = db.SugarDatabase.Queryable<Window>().Where(a => a.AreaId == item.Id).Select(a => new WindowBody
+                    WindowBody wbBody=new WindowBody();
+                    wbBody.Name = window.Name;
+                    wbBody.Id = window.Id;
+                    wbBody.AreaId = window.AreaId;
+                    wbBody.Stock = window.Stock;
+                    var record = db.SugarDatabase.Queryable<DailyTicketRecord>().First(a => a.WindowId == window.Id && a.Date == date);
+                    if (record == null)
                     {
-                        Id = a.Id,
-                        Name = a.Name,
-                        AreaId = a.AreaId,
-                        Input = 0,
-                        Output = 0,
-                        Remain = 0
-                    }).ToList();
+                        wbBody.Input = 0;
+                        wbBody.Output =0;
+                        wbBody.Remain = 0;
+                    }
+                    else
+                    {
+                        wbBody.Input = record.Input;
+                        wbBody.Output = record.Output;
+                        wbBody.Remain = record.Remain;
+                    }
+                    listModel.Add(wbBody);
                 }
+                //if (windowBody.Count == 0)//不存在记录
+                //{
+                //    windowBody = db.SugarDatabase.Queryable<Window>().Where(a => a.AreaId == item.Id).Select(a => new WindowBody
+                //    {
+                //        Id = a.Id,
+                //        Name = a.Name,
+                //        AreaId = a.AreaId,
+                //        Input = 0,
+                //        Output = 0,
+                //        Remain = 0
+                //    }).ToList();
+                //}
 
                 int areaRemain = 0;
-                foreach (var wb in windowBody)
+                foreach (var wb in listModel)
                 {
                     areaRemain += wb.Remain;
                 }
@@ -95,7 +119,7 @@ namespace TrainTicket.Controllers
                     Id = item.Id,
                     Name = item.Name,
                     AreaRemain = areaRemain,
-                    Windows = windowBody
+                    Windows = listModel
                 });
             }
             return Json(new BaseResult { Code = MsgCode.Success, Data = list }, new JsonSerializerSettings() { DateFormatString = "yyyy-MM-dd HH:mm:ss" });
@@ -123,7 +147,7 @@ namespace TrainTicket.Controllers
                         dailyTicketRecord.Input = window.Input;
                         dailyTicketRecord.Output = window.Output;
                         dailyTicketRecord.WindowId = window.Id;
-                        var previousDayRemain = db.SugarDatabase.Queryable<DailyTicketRecord>().Where("Date<@Date", new { Date = date }).OrderBy(a => a.Date, OrderByType.Desc).First();
+                        var previousDayRemain = db.SugarDatabase.Queryable<DailyTicketRecord>().Where("Date<@Date and windowId=@WindowId", new { Date = date, WindowId = window.Id }).OrderBy(a => a.Date, OrderByType.Desc).First();
                         if (previousDayRemain == null)
                         {
                             var wModel = db.SugarDatabase.Queryable<Window>().Single(a => a.Id == window.Id);
@@ -139,7 +163,7 @@ namespace TrainTicket.Controllers
                     {
                         model.Input = window.Input;
                         model.Output = window.Output;
-                        var previousDayRemain = db.SugarDatabase.Queryable<DailyTicketRecord>().Where("Date<@Date", new { Date = date }).OrderBy(a => a.Date, OrderByType.Desc).First();
+                        var previousDayRemain = db.SugarDatabase.Queryable<DailyTicketRecord>().Where("Date<@Date and windowId=@WindowId", new { Date = date, WindowId = window.Id }).OrderBy(a => a.Date, OrderByType.Desc).First();
                         if (previousDayRemain == null)
                         {
                             var wModel = db.SugarDatabase.Queryable<Window>().Single(a => a.Id == window.Id);
@@ -149,8 +173,9 @@ namespace TrainTicket.Controllers
                         {
                             model.Remain = previousDayRemain.Remain - window.Output + window.Input;
                         }
-                        ReCalculate(date);
                         db.SugarDatabase.Updateable(model).ExecuteCommand();
+                        ReCalculate(date, window.Id);
+
                     }
                 }
             }
@@ -160,12 +185,13 @@ namespace TrainTicket.Controllers
         /// 重新计算这个日子之后所有的记录
         /// </summary>
         /// <param name="date"></param>
-        public void ReCalculate(string date)
+        /// <param name="windowId"></param>
+        public void ReCalculate(string date, int windowId)
         {
-            var dailyTicketRecords = db.SugarDatabase.Queryable<DailyTicketRecord>().Where("Date>@Date", new { Date = date }).OrderBy(a => a.Date).ToList();
+            var dailyTicketRecords = db.SugarDatabase.Queryable<DailyTicketRecord>().Where("Date>@Date and windowId=@WindowId", new { Date = date, WindowId = windowId }).OrderBy(a => a.Date).ToList();
             foreach (var item in dailyTicketRecords)
             {
-                var previousDayRemain = db.SugarDatabase.Queryable<DailyTicketRecord>().Where("Date<@Date", new { Date = item.Date }).OrderBy(a => a.Date, OrderByType.Desc).First();
+                var previousDayRemain = db.SugarDatabase.Queryable<DailyTicketRecord>().Where("Date<@Date and windowId=@WindowId", new { Date = item.Date, WindowId = windowId }).OrderBy(a => a.Date, OrderByType.Desc).First();
                 item.Remain = previousDayRemain.Remain - item.Output + item.Input;
                 db.SugarDatabase.Updateable(item).ExecuteCommand();
             }

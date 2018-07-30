@@ -30,14 +30,27 @@
                 }).then(function (resp) {
                     if (resp.data.Code == 1000) {
                         $scope.allWindows = resp.data.Data;
+                        $scope.totalAreaRemain = 0;
+                        $scope.totalInput = 0;
+                        $scope.totalOutput = 0;
+                        for (var i = 0; i < $scope.allWindows.length; i++) {
+                            $scope.totalAreaRemain += $scope.allWindows[i].AreaRemain;
+                            for (var j = 0; j < $scope.allWindows[i].Windows.length; j++) {
+                                $scope.totalInput += $scope.allWindows[i].Windows[j].Input;
+                                $scope.totalOutput += $scope.allWindows[i].Windows[j].Output;
+                            }
+                        }
                     } else {
                         alert(resp.data.Msg);
                     }
                 });
             };
-            $scope.getAllWindow('');//初始化
+            
+          
             var now = new Date();
             var time = now.getFullYear() + "-" + ((now.getMonth() + 1) < 10 ? "0" : "") + (now.getMonth() + 1) + "-" + (now.getDate() < 10 ? "0" : "") + now.getDate();
+            $scope.date = time;
+            $scope.getAllWindow(time);//初始化
             $("#time").datetimepicker({
                 format: 'yyyy-mm-dd',
                 language: 'zh-CN',
@@ -55,6 +68,9 @@
             }
             $scope.areaList = [];
             $scope.initAreaId = 0;
+            $scope.totalAreaRemain = 0;
+            $scope.totalInput = 0;
+            $scope.totalOutput = 0;
             $scope.allWindows = [];
             $scope.addWindow = function () {
                 $('#addWindow').modal('show');
@@ -84,6 +100,7 @@
                 }).then(function (resp) {
                     if (resp.data.Code == 1000) {
                         $('#addArea').modal('hide');
+                        $scope.getAllWindow($scope.date);
                     } else {
                         alert(resp.data.Msg);
                     }
@@ -100,6 +117,7 @@
                 }).then(function (resp) {
                     if (resp.data.Code == 1000) {
                         $('#addWindow').modal('hide');
+                        $scope.getAllWindow($scope.date);
                     } else {
                         alert(resp.data.Msg);
                     }
@@ -114,6 +132,7 @@
                     }).then(function (resp) {
                         if (resp.data.Code == 1000) {
                             $('#addWindow').modal('hide');
+                            $scope.getAllWindow($scope.date);
                         } else {
                             alert(resp.data.Msg);
                         }
@@ -170,7 +189,7 @@
         <div class="row">
             <div class="col-md-4"></div>
             <div class="col-md-4">
-                <input type="datetime" class="form-control" id="time" ng-model="schedule.BeginTime" readonly>
+                <input type="datetime" class="form-control" id="time" ng-model="date" readonly>
             </div>
             <div class="col-md-4"></div>
         </div>
@@ -179,10 +198,10 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>区域</th>
+                            <th>区域 ({{totalAreaRemain }})</th>
                             <th>窗口</th>
-                            <th>领发数量</th>
-                            <th>请领数量</th>
+                            <th>领发数量({{totalOutput }})</th>
+                            <th>请领数量({{totalInput }})</th>
                             <th>结存数量</th>
                         </tr>
                     </thead>
