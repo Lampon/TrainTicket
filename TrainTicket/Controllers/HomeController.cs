@@ -7,6 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Npoi.Core.HSSF.UserModel;
+using Npoi.Core.SS.UserModel;
+using Npoi.Core.SS.Util;
 using SqlSugar;
 using TrainTicket.Common;
 using TrainTicket.Models;
@@ -76,7 +79,7 @@ namespace TrainTicket.Controllers
                 var listWindowBody = db.SugarDatabase.Queryable<Window>().Where(a => a.AreaId == item.Id).ToList();
                 foreach (var window in listWindowBody)
                 {
-                    WindowBody wbBody=new WindowBody();
+                    WindowBody wbBody = new WindowBody();
                     wbBody.Name = window.Name;
                     wbBody.Id = window.Id;
                     wbBody.AreaId = window.AreaId;
@@ -85,7 +88,7 @@ namespace TrainTicket.Controllers
                     if (record == null)
                     {
                         wbBody.Input = 0;
-                        wbBody.Output =0;
+                        wbBody.Output = 0;
                         wbBody.Remain = 0;
                     }
                     else
@@ -195,6 +198,73 @@ namespace TrainTicket.Controllers
                 item.Remain = previousDayRemain.Remain - item.Output + item.Input;
                 db.SugarDatabase.Updateable(item).ExecuteCommand();
             }
+        }
+
+        /// <summary>
+        /// 导出记录
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        public IActionResult ExportExcel(string date)
+        {
+            if (string.IsNullOrEmpty(date))
+            {
+                date = DateTime.Now.ToString("yyy-MM-dd");
+            }
+            var Arealist = db.SugarDatabase.Queryable<Area>().ToList();
+            HSSFWorkbook wk = new HSSFWorkbook();
+            //创建一个名称为mySheet的表
+            ISheet tb = wk.CreateSheet(date);
+            IRow row = tb.CreateRow(0);
+            row.CreateCell(0).SetCellValue("区域");
+            row.CreateCell(1).SetCellValue("窗口");
+            row.CreateCell(2).SetCellValue("领发数量");
+            row.CreateCell(3).SetCellValue("请领数量");
+            row.CreateCell(4).SetCellValue("结存数量");
+            int rowLenth = 1;
+            ICellStyle style = wk.CreateCellStyle();
+            //style.Alignment = HorizontalAlignment.Center;//水平居中
+            style.VerticalAlignment = VerticalAlignment.Center;//垂直居中
+            for (int i = 0; i < Arealist.Count; i++)
+            {
+                int areId = Arealist[i].Id;
+                List<WindowBody> listModel = new List<WindowBody>();
+                var listWindowBody = db.SugarDatabase.Queryable<Window>().Where(a => a.AreaId == areId).ToList();
+                int initRow = rowLenth;
+                for (int j = 0; j < listWindowBody.Count; j++)
+                {
+                    IRow row2 = tb.CreateRow(rowLenth);
+                    row2.CreateCell(1).SetCellValue(listWindowBody[j].Name);
+                    int windowId = listWindowBody[j].Id;
+                    var record = db.SugarDatabase.Queryable<DailyTicketRecord>().First(a => a.WindowId == windowId && a.Date == date);
+                    if (record == null)
+                    {
+                        row2.CreateCell(2).SetCellValue("0");
+                        row2.CreateCell(3).SetCellValue("0");
+                        row2.CreateCell(4).SetCellValue("0");
+                    }
+                    else
+                    {
+                        row2.CreateCell(2).SetCellValue(record.Output);
+                        row2.CreateCell(3).SetCellValue(record.Input);
+                        row2.CreateCell(4).SetCellValue(record.Remain);
+                    }
+
+                    if (j == 0)
+                    {
+                        var cell = row2.CreateCell(0);
+                        cell.CellStyle = style;
+                        cell.SetCellValue(Arealist[i].Name);
+                    }
+                    rowLenth++;
+                }
+                tb.AddMergedRegion(new CellRangeAddress(initRow, rowLenth - 1, 0, 0));
+
+            }
+            MemoryStream ms = new MemoryStream();
+            wk.Write(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+            return File(ms, "application/vnd.ms-excel", date + ".xls");
         }
         public IActionResult Index()
         {

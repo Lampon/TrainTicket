@@ -45,8 +45,8 @@
                     }
                 });
             };
-            
-          
+
+
             var now = new Date();
             var time = now.getFullYear() + "-" + ((now.getMonth() + 1) < 10 ? "0" : "") + (now.getMonth() + 1) + "-" + (now.getDate() < 10 ? "0" : "") + now.getDate();
             $scope.date = time;
@@ -138,6 +138,9 @@
                         }
                     });
             }
+            $scope.exportExcel = function () {
+                window.open('/home/ExportExcel?date=' + $scope.date);
+            }
         });
     </script>
     <style>
@@ -191,7 +194,9 @@
             <div class="col-md-4">
                 <input type="datetime" class="form-control" id="time" ng-model="date" readonly>
             </div>
-            <div class="col-md-4"></div>
+            <div class="col-md-4">
+                <button type="button" ng-click="exportExcel()" class="btn btn-primary">导出</button>
+            </div>
         </div>
         <div class="row">
             <div class="col-md-12">

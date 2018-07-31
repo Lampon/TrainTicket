@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="7.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.9" />
+    <PackageReference Include="Savorboard.NPOI.Core.Ooxml" Version="1.1.4" />
     <PackageReference Include="sqlSugarCore" Version="4.6.4.9" />
   </ItemGroup>
 

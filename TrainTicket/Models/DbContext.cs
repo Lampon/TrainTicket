@@ -18,7 +18,7 @@ namespace TrainTicket.Models
                     DbType = SqlSugar.DbType.Sqlite,
                     IsAutoCloseConnection = true,
                     IsShardSameThread = true /*Shard Same Thread*/,
-                    InitKeyType = InitKeyType.Attribute
+                    //InitKeyType = InitKeyType.Attribute
                     /*从数据库*/
                     //SlaveConnectionConfigs = new List<SlaveConnectionConfig>() {
                     //    new SlaveConnectionConfig()
